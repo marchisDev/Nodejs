@@ -33,10 +33,5 @@ goog.net.EventType = {
   READY_STATE_CHANGE: 'readystatechange',
   TIMEOUT: 'timeout',
   INCREMENTAL_DATA: 'incrementaldata',
-  PROGRESS: 'progress',
-  // DOWNLOAD_PROGRESS and UPLOAD_PROGRESS are special events dispatched by
-  // goog.net.XhrIo to allow binding listeners specific to each type of
-  // progress.
-  DOWNLOAD_PROGRESS: 'downloadprogress',
-  UPLOAD_PROGRESS: 'uploadprogress'
+  PROGRESS: 'progress'
 };

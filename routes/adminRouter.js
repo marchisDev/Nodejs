@@ -32,9 +32,25 @@ admin.use(session({
 //function
 
 //api
+admin.get('/', (req, res)=>{
+    res.render('admin')
+})
 admin.get('/admin', (req, res)=>{
     res.render('admin')
 })
+
+////lay tat ca user////////////
+admin.get('/users', (req, res) => {
+    User.find({}, (err, users) => {
+      if (err) {
+        console.log(err);
+        res.status(500).send("Internal Server Error");
+      } else {
+        res.render('users', { users: users });
+      }
+    });
+  });
+  
 
 
 

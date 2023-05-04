@@ -19,8 +19,9 @@ goog.provide('goog.messaging.testdata.portchannel_worker');
 goog.require('goog.messaging.PortChannel');
 
 function registerPing(channel) {
-  channel.registerService(
-      'ping', function(msg) { channel.send('pong', msg); }, true);
+  channel.registerService('ping', function(msg) {
+    channel.send('pong', msg);
+  }, true);
 }
 
 function startListening() {
@@ -34,5 +35,3 @@ function startListening() {
 }
 
 startListening();
-// Signal to portchannel_test that the worker is ready.
-postMessage('loaded');

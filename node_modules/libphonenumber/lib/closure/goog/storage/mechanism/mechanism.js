@@ -26,7 +26,6 @@ goog.provide('goog.storage.mechanism.Mechanism');
  * Basic interface for all storage mechanisms.
  *
  * @constructor
- * @struct
  */
 goog.storage.mechanism.Mechanism = function() {};
 

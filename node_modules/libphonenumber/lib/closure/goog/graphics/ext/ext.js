@@ -15,8 +15,6 @@
 
 /**
  * @fileoverview Extended graphics namespace.
- * @suppress {extraRequire} All the requires in this file are "extra"
- * because this file is not actually using them.
  */
 
 

@@ -27,7 +27,6 @@
  *
  */
 
-// clang-format off
 
 /**
  * Namespace for Script to Languages mapping
@@ -38,7 +37,7 @@ goog.require('goog.locale');
 
 /**
  * The script code to list of language codes map.
- * @type {!Object<string, !Array<string>>}
+ * @type {Object}
  */
 
 /* ~!@# genmethods.scriptToLanguages() #@!~ */

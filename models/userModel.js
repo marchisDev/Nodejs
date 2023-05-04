@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
       birthday: { type: Date, required: true },
       password: { type: String, required: true },
       otp: { type: String },
+      avatar: { type: String }
     // otpCreatedTime: { type: Date }
   });
 

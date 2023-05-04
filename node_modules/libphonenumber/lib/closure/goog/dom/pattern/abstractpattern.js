@@ -30,12 +30,14 @@ goog.require('goog.dom.pattern.MatchType');
  * @constructor
  */
 goog.dom.pattern.AbstractPattern = function() {
-  /**
-   * The first node matched by this pattern.
-   * @type {Node}
-   */
-  this.matchedNode = null;
 };
+
+
+/**
+ * The first node matched by this pattern.
+ * @type {Node}
+ */
+goog.dom.pattern.AbstractPattern.prototype.matchedNode = null;
 
 
 /**
