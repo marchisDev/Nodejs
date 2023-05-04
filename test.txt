@@ -1,0 +1,10 @@
+{
+    "email": "kien07@gmail.com",
+    "username": "kien06",
+    "password": "kien06",
+    "repassword":"kien06",
+    "fullname": "Bui Trung Sau Kien",
+    "address": "Truc Thai",
+    "birthday":"2002-05-13",
+    "phone":"0387899510"
+}
