@@ -38,15 +38,39 @@ router.use(session({
     cookie: { maxAge: 10 * 60 * 1000 } // Thời gian sống của cookie là 10 phút
 }))
 
-//function
-async function compare(text, hash) {
-    let check = await bcrypt.compare(text, hash);
-    return check
+//function send OTP
+const accountSid = process.env.twilio_ACCOUNT_SID
+const authToken = process.env.twilio_AUTH_TOKEN
+const twilioNumber = process.env.twilio_Phone
+const client = require('twilio')(accountSid, authToken);
+
+async function sendOTP(phoneNumber, otp) {
+  try {
+    const message = await client.messages.create({
+      body: `Your OTP is ${otp}`,
+      from: twilioNumber,
+      to: phoneNumber
+    });
+    console.log(message.sid);
+    return message.sid;
+  } catch (error) {
+    console.error(error);
+    throw new Error('Failed to send OTP via SMS');
+  }
+}
+
+const { v4: uuidv4 } = require('uuid');
+
+function generateUserId() {
+    return uuidv4();
 }
 //resful API
 router.get('/', function(req, res) {
     res.render('login')
 })
+// router.post('/', function(req, res) {
+//     res.render('home')
+// })
 
 ////////////////////login//////////////////////////////////////////////////////
 router.get('/login',loginValidator, function(req, res) {
@@ -79,10 +103,9 @@ router.post('/login', loginValidator, async (req, res) => {
   
       // Login successful
       req.session.user = user;
-      res.redirect('/home');
-      return res.status(200).json({ code: 0, message: 'Login successful' });
+      res.redirect('home');
+    //   return res.status(200).json({ code: 0, message: 'Login successful' });
     } catch (err) {
-      console.error(err);
       return res.status(500).json({ code: 3, message: 'Internal server error' });
     }
   });
@@ -111,8 +134,9 @@ router.post('/register', registerValidator, async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-
+        let userId = generateUserId()
         const newUser = new User({
+            userId: userId,
             email: email,
             phone: phone,
             username: username,
@@ -128,53 +152,56 @@ router.post('/register', registerValidator, async (req, res) => {
         console.error(err);
         return res.status(500).send('Server error');
     }
-});
-
-
-////////////////verify-otp//////////////////////////////////////////////////////////////////////////////////////////
-
-router.get('/verify-otp', (req, res, next)=>{
+})
+////////////////////otp///////////////////////
+router.get('/register/verify-otp', (req, res) => {
     res.render('OTP')
 })
 
-router.post('/verify-otp', (req, res, next)=>{
-    const otp = req.body.otp
-    const savedOtp = req.session.otp
-
-    // Kiểm tra thời gian hết hạn của OTP
-    const otpExpireTime = req.session.otpExpireTime;
-    if (moment() > otpExpireTime) {
-        // OTP đã hết hạn, thông báo cho người dùng và yêu cầu nhập lại mã OTP hoặc gửi lại mã mới
-        res.render('verify-otp', { error: 'OTP was not useful, Resend' })
-    } else {
-    // OTP còn hạn, tiếp tục xử lý xác nhận tài khoản
-        if (otp === savedOtp) {
-            // Mã OTP chính xác
-            // Xác nhận đăng ký tài khoản của người dùng
-            const user = new User({
-                email: req.session.email,
-                phone: req.session.phone,
-                name: req.session.name,
-                address: req.session.address,
-                birthday: req.session.birthday,
-                password: req.session.password
-            });
-            user.save().then(() => {
-            // Đăng ký tài khoản thành công
-                res.redirect('/login')
-            }).catch(err => {
-                console.log(err)
-                res.status(500).send('Đã xảy ra lỗi')
-            });
-        }
-        else {
-            // Mã OTP không chính xác
-            // Yêu cầu người dùng nhập lại mã OTP hoặc gửi lại mã OTP mới
-            res.render('verify-otp', { error: 'OTP code was invalid, please enter again.' })
-        }
-    }
+router.post('/register/verify-otp', (req, res) => {
+    res.render('OTP')
 })
+//////////////////////////////////////////////////////
+// Route to display change password page
+router.get('/change-password', (req, res) => {
+    res.render('change-password', { errors: null });
+  })
+// Route to handle change password request
+router.post('/change-password', async (req, res) => {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+  
+    // Validate inputs
+    const errors = [];
+  
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      errors.push({ msg: 'Please fill in all fields' });
+    }
+  
+    if (newPassword !== confirmPassword) {
+      errors.push({ msg: 'New password and confirm password do not match' });
+    }
+  
+    // Check if old password is correct
+    const user = await User.findById(req.user.id);
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+  
+    if (!isMatch) {
+      errors.push({ msg: 'Old password is incorrect'
+    });
 
+    // If there are errors, render the form with errors
+    if (errors.length > 0) {
+    return res.render('change-password', { errors });
+    }
+    
+    // Encrypt new password and save to database
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    user.password = hashedPassword;
+    await user.save();
+    
+    req.flash('success_msg', 'Password changed successfully');
+    res.redirect('/dashboard');
+    }})  
 /////////////////////////////////////////////////////////////////////
 router.get('/home', (req, res) => {
     res.render('home')
