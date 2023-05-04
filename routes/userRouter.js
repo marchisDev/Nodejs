@@ -45,10 +45,7 @@ async function compare(text, hash) {
 }
 //resful API
 router.get('/', function(req, res) {
-    res.json({
-        code: 0,
-        message:"User Router"
-    })
+    res.render('login')
 })
 
 ////////////////////login//////////////////////////////////////////////////////
@@ -56,39 +53,39 @@ router.get('/login',loginValidator, function(req, res) {
     res.render('login')
 })
 
-router.post('/login',loginValidator, (req, res) => {
-    let result = validationResult(req)
-    if(result.errors.length === 0){
-        // If validation passed
-        if (req.body.email == "admin@gmail.com" && req.body.password == "123456") {
-          req.session.admin = true
-          return res.redirect('/admin')
-        }
-        User.findOne({ email: req.body.email })
-        .then(user=>{
-          if(!user){
-            return res.status(401).json({ code: 1, message: 'No user found with this email'})
-          }
-          return bcrypt.compare(req.body.password, user.password)
-          .then(match=>{
-            if(!match){
-              return res.status(401).json({ code: 2, message: 'Incorrect password' })
-            }
-            // Login successful
-            req.session.user = user
-            return res.status(200).json({ code: 0, message: 'Login successful' })
-          })
-        })
-        .catch(err=>{
-          console.error(err)
-          return res.status(500).json({ code: 3, message: 'Internal server error' })
-        })
-      }
-      else {
-        // If validation failed
-            return res.status(422).json({ code: 4, message: result})
+router.post('/login', loginValidator, async (req, res) => {
+    const result = validationResult(req);
+  
+    if (!result.isEmpty()) {
+      return res.status(422).json({ code: 4, message: result });
     }
-})
+  
+    try {
+      // If validation passed
+      if (req.body.email == "admin@gmail.com" && req.body.password == "123456") {
+        req.session.admin = true
+        return res.redirect('/admin')
+      }
+  
+      const user = await User.findOne({ email: req.body.email });
+      if (!user) {
+        return res.status(401).json({ code: 1, message: 'No user found with this email' });
+      }
+  
+      const match = await bcrypt.compare(req.body.password, user.password);
+      if (!match) {
+        return res.status(401).json({ code: 2, message: 'Incorrect password' });
+      }
+  
+      // Login successful
+      req.session.user = user;
+      res.redirect('/home');
+      return res.status(200).json({ code: 0, message: 'Login successful' });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ code: 3, message: 'Internal server error' });
+    }
+  });
 
 ///////////////////register/////////////////////////////////////////////////////////////
 
@@ -98,7 +95,7 @@ router.get('/register',registerValidator,(req, res) => {
 })
 
 
-router.post('/register', registerValidator, (req, res) => {
+router.post('/register', registerValidator, async (req, res) => {
     const result = validationResult(req);
 
     if (!result.isEmpty()) {
@@ -107,30 +104,30 @@ router.post('/register', registerValidator, (req, res) => {
 
     const { username, email, phone, password, address, fullname, birthday } = req.body;
 
-    User.findOne({ email: email }).then(user => {
+    try {
+        const user = await User.findOne({ email: email });
         if (user) {
             return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
         }
 
-        return bcrypt.hash(password, saltRounds).then(hashedPassword => {
-            const user = new User({
-                email: email,
-                phone: phone,
-                username: username,
-                fullname: fullname,
-                address: address,
-                birthday: birthday,
-                password: hashedPassword
-            });
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-            return user.save();
+        const newUser = new User({
+            email: email,
+            phone: phone,
+            username: username,
+            fullname: fullname,
+            address: address,
+            birthday: birthday,
+            password: hashedPassword
         });
-    }).then(() => {
-        res.redirect('/login');
-    }).catch(err => {
+
+        await newUser.save();
+        return res.redirect('/login');
+    } catch (err) {
         console.error(err);
-        res.status(500).send('Server error');
-    });
+        return res.status(500).send('Server error');
+    }
 });
 
 
@@ -141,41 +138,41 @@ router.get('/verify-otp', (req, res, next)=>{
 })
 
 router.post('/verify-otp', (req, res, next)=>{
-    // const otp = req.body.otp
-    // const savedOtp = req.session.otp
+    const otp = req.body.otp
+    const savedOtp = req.session.otp
 
-    // // Kiểm tra thời gian hết hạn của OTP
-    // const otpExpireTime = req.session.otpExpireTime;
-    // if (moment() > otpExpireTime) {
-    //     // OTP đã hết hạn, thông báo cho người dùng và yêu cầu nhập lại mã OTP hoặc gửi lại mã mới
-    //     res.render('verify-otp', { error: 'OTP was not useful, Resend' })
-    // } else {
-    // // OTP còn hạn, tiếp tục xử lý xác nhận tài khoản
-    //     if (otp === savedOtp) {
-    //         // Mã OTP chính xác
-    //         // Xác nhận đăng ký tài khoản của người dùng
-    //         const user = new User({
-    //             email: req.session.email,
-    //             phone: req.session.phone,
-    //             name: req.session.name,
-    //             address: req.session.address,
-    //             birthday: req.session.birthday,
-    //             password: req.session.password
-    //         });
-    //         user.save().then(() => {
-    //         // Đăng ký tài khoản thành công
-    //             res.redirect('/login')
-    //         }).catch(err => {
-    //             console.log(err)
-    //             res.status(500).send('Đã xảy ra lỗi')
-    //         });
-    //     }
-    //     else {
-    //         // Mã OTP không chính xác
-    //         // Yêu cầu người dùng nhập lại mã OTP hoặc gửi lại mã OTP mới
-    //         res.render('verify-otp', { error: 'OTP code was invalid, please enter again.' })
-    //     }
-    // }
+    // Kiểm tra thời gian hết hạn của OTP
+    const otpExpireTime = req.session.otpExpireTime;
+    if (moment() > otpExpireTime) {
+        // OTP đã hết hạn, thông báo cho người dùng và yêu cầu nhập lại mã OTP hoặc gửi lại mã mới
+        res.render('verify-otp', { error: 'OTP was not useful, Resend' })
+    } else {
+    // OTP còn hạn, tiếp tục xử lý xác nhận tài khoản
+        if (otp === savedOtp) {
+            // Mã OTP chính xác
+            // Xác nhận đăng ký tài khoản của người dùng
+            const user = new User({
+                email: req.session.email,
+                phone: req.session.phone,
+                name: req.session.name,
+                address: req.session.address,
+                birthday: req.session.birthday,
+                password: req.session.password
+            });
+            user.save().then(() => {
+            // Đăng ký tài khoản thành công
+                res.redirect('/login')
+            }).catch(err => {
+                console.log(err)
+                res.status(500).send('Đã xảy ra lỗi')
+            });
+        }
+        else {
+            // Mã OTP không chính xác
+            // Yêu cầu người dùng nhập lại mã OTP hoặc gửi lại mã OTP mới
+            res.render('verify-otp', { error: 'OTP code was invalid, please enter again.' })
+        }
+    }
 })
 
 /////////////////////////////////////////////////////////////////////
@@ -184,7 +181,7 @@ router.get('/home', (req, res) => {
 })
 
 router.post('/home', (req, res) => {
-
+    res.render('home')
 })
 
 ////////////////////////////Sent//////////////////////////////////////////
