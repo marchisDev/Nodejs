@@ -4,6 +4,7 @@ const express = require('express')
 const app = express()
 //db
 const mongodb = require('mongoose')
+const path = require('path')
 
 //router
 const userRoute = require('./routes/userRouter')
@@ -20,6 +21,7 @@ app.set('view engine', 'ejs')
 //Routing User
 app.use('/', userRoute)
 app.use('/admin',adminRoute)
+app.use(express.static(path.join(__dirname, 'public')));
 
 //JSON encode
 app.use(express.urlencoded({ extended:false }))
